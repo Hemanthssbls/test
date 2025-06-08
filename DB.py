@@ -13,46 +13,43 @@ collection = db[COLLECTION_NAME]
 
 # Step 1: Group movies by size
 pipeline = [
-    {
-        "$group": {
-            "_id": "$size",
-            "ids": {"$push": "$_id"},
-            "names": {"$push": "$name"},
-            "count": {"$sum": 1}
-        }
-    },
-    {
-        "$match": {
-            "count": {"$gt": 1}
-        }
-    }
+    {
+        "$group": {
+            "_id": "$size",
+            "ids": {"$push": "$_id"},
+            "names": {"$push": "$name"},
+            "count": {"$sum": 1}
+        }
+    },
+    {
+        "$match": {
+            "count": {"$gt": 1}
+        }
+    }
 ]
 
 duplicates = list(collection.aggregate(pipeline))
 
 # Step 2: Delete duplicates, keep one per group
+preferred_order = ["1080p", "720p", "BluRay", "DVDRip", "PreDVD", "CAM"]
+
+def quality_rank(name):
+    for i, tag in enumerate(preferred_order):
+        if re.search(tag, name, re.IGNORECASE):
+            return i
+    return len(preferred_order)
+
 for group in duplicates:
-    ids = group['ids']
-    names = group['names']
-    
-    # Optionally: sort names to prefer higher quality
-    preferred_order = ["1080p", "720p", "BluRay", "DVDRip", "PreDVD", "CAM"]
-    
-    def quality_rank(name):
-        for i, tag in enumerate(preferred_order):
-            if re.search(tag, name, re.IGNORECASE):
-                return i
-        return len(preferred_order)
+    ids = group['ids']
+    names = group['names']
 
-    sorted_ids = sorted(zip(names, ids), key=lambda x: quality_rank(x[0]))
-    
-    # Keep the best one
-    keep_id = sorted_ids[0][1]
-    delete_ids = [doc_id for _, doc_id in sorted_ids[1:]]
+    sorted_ids = sorted(zip(names, ids), key=lambda x: quality_rank(x[0]))
 
-    # Delete other duplicates
-    if delete_ids:
-        result = collection.delete_many({"_id": {"$in": delete_ids}})
-        print(f"Deleted {result.deleted_count} duplicate(s) for size {group['_id']}")
+    keep_id = sorted_ids[0][1]
+    delete_ids = [doc_id for _, doc_id in sorted_ids[1:]]
+
+    if delete_ids:
+        result = collection.delete_many({"_id": {"$in": delete_ids}})
+        print(f"Deleted {result.deleted_count} duplicate(s) for size {group['_id']}")
 
 print("Duplicate cleanup complete.")
