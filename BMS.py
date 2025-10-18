@@ -13,7 +13,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configure your bot token here
-TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
+TELEGRAM_BOT_TOKEN = "8439216723:AAHbRUEGytnJ_INmX35AN4BVi_XVyLyvNv8"
 DOWNLOAD_FOLDER = "downloaded_images"
 
 # Create download folder if it doesn't exist
